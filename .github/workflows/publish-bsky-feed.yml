@@ -1,0 +1,54 @@
+name: Публикация ленты Bluesky
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 4 * * *" # В 04:00 UTC каждый день
+
+permissions:
+  contents: write
+
+jobs:
+  publish-feed:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Prepare workspace
+        run: |
+          mkdir -p feeds
+
+      - name: Download bsky_feed.py
+        run: |
+          curl -fsSL -o bsky_feed.py https://raw.githubusercontent.com/hazadus/my-scripts/main/scripts/bsky_feed.py
+
+      - name: Run bsky_feed.py and save markdown
+        shell: bash
+        run: |
+          YESTERDAY=$(date -u -d "yesterday" +%Y-%m-%d)
+          uv run bsky_feed.py --identifier "hazadus.bsky.social" --password "{{ secrets.BSKY_PASSWORD }}" "$YESTERDAY" --markdown > "feeds/${YESTERDAY}.md"
+
+      - name: Commit and push
+        shell: bash
+        run: |
+          git config user.name "Automated"
+          git config user.email "actions@users.noreply.github.com"
+          YESTERDAY=$(date -u -d "yesterday" +%Y-%m-%d)
+          git add "feeds/${YESTERDAY}.md"
+          timestamp=$(date -u)
+          git commit -m "Новая лента Bluesky за ${YESTERDAY} (сгенерировано ${timestamp})" || exit 0
+          git pull --rebase
+          git push
+
+
