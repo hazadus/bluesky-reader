@@ -1,4 +1,4 @@
-name: Публикация ленты Bluesky
+name: ☁️ Публикация ленты Bluesky
 
 on:
   workflow_dispatch:
@@ -37,7 +37,7 @@ jobs:
         shell: bash
         run: |
           YESTERDAY=$(date -u -d "yesterday" +%Y-%m-%d)
-          uv run bsky_feed.py --identifier "hazadus.bsky.social" --password "{{ secrets.BSKY_PASSWORD }}" "$YESTERDAY" --markdown > "feeds/${YESTERDAY}.md"
+          uv run bsky_feed.py --identifier "hazadus.bsky.social" --password "${{ secrets.BSKY_PASSWORD }}" "$YESTERDAY" --markdown > "feeds/${YESTERDAY}.md"
 
       - name: Commit and push
         shell: bash
